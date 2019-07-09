@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh"]
+          args: ["-c", "/init-scripts/init-db.sh"]
+          env:
+          - name: PGHOST
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.postgresSecretName }}
+                key: pghost
+          - name: PGDATABASE
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.postgresSecretName }}
+                key: pgdatabase
+          - name: PGUSER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.postgresSecretName }}
+                key: pguser
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.postgresSecretName }}
+                key: pgpassword
+{{- if .Values.extraEnv }}
+{{ toYaml .Values.extraEnv | indent 10 }}
+{{- end }}
+          volumeMounts:
+          - name: custom-init-scripts
+            mountPath: /init-scripts/
+      volumes:
+      - name: custom-init-scripts
+        configMap:
+          name: {{ .Values.initdbScriptsConfigMapName }}
+          defaultMode: 0777
+

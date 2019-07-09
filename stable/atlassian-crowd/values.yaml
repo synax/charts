@@ -1,0 +1,46 @@
+replicaCount: 1
+
+image:
+  repository: blacklabelops/crowd
+  tag: 3.3.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+crowd:
+  proxyName: 
+  proxyPort: 
+  proxyScheme: 
+  proxySecure: 
+  url: 
+  loginBaseUrl: 
+  splashContext: 
+  crowdContext: 
+  crodIDContext: 
+  openIDClientContext: 
+  demoContext: 
+  
+ingress:
+  enabled: true
+  annotations:
+      kubernetes.io/ingress.class: nginx
+      certmanager.k8s.io/cluster-issuer: letsencrypt-staging
+      kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - crowd.example.io
+  tls:
+    - secretName: crowd.example.io
+      hosts:
+        - crowd.example.io
+
+persistence:
+  enabled: true
+  #storageClass:
+  accessMode: ReadWriteOnce
+  size: 4Gi
+
+resources: {}
+

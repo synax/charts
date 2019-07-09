@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: bitnami/postgresql
+  tag: 10.6.0
+  pullPolicy: IfNotPresent
+
+# The secret specified below must contain the following keys
+# - pghost > the database server fqdn
+# - pgdatabase > the database name to be authenticated against
+# - pguser > admin user to create databases
+# - pgpassword > password of the admin user
+postgresSecretName: postgresSecret
+
+# A config map containing a script with name "init-db.sh" containing the db creation code
+initdbScriptsConfigMapName: init-script
+
+# Define custom environment variables to pass to the image here
+extraEnv: {}

@@ -1,0 +1,91 @@
+# https://github.com/cptactionhank/docker-atlassian-bitbucket-software
+
+image:
+  repository: atlassian/bitbucket-server
+  tag: 5.16.0
+  pullPolicy: IfNotPresent
+
+bitbucket:
+  # Due to the migration to Spring Boot in 5.0, there are changes to how you set up Bitbucket to run behind a reverse proxy.
+  serverSecure: true
+  serverScheme: https
+  serverProxyPort: 443
+  serverProxyName: bitbucket.example.io
+
+  # If you need to override Bitbucket Server's default memory configuration or 
+  # pass additional JVM arguments, use the environment variables below.
+  # The minimum heap size of the JVM
+  jvmMinimumMemory: 512m
+  # The maximum heap size of the JVM
+  jvmMaximumMemory: 1024m
+  # Additional JVM arguments for Bitbucket Server, such as a custom Java Trust Store
+  jvmSupportRecommendedArgs:
+
+  # This docker image can be run as a Smart Mirror or as part of a Data Center cluster. 
+  # You can specify the following properties to start Bitbucket as a mirror or as a Data Center node:
+
+  # Set 'false' to prevent Elasticsearch from starting in the container. This should be used if Elasticsearch is running remotely, e.g. for if Bitbucket is running in a Data Center cluster
+  # elasticsearchEnabled: true
+  # # The mode Bitbucket will run in. This can be set to 'mirror' to start Bitbucket as a Smart Mirror. This will also disable Elasticsearch even if `bitbucket.elasticsearchEnabled` has not been set to 'false'.
+  # applicationMode: default
+  # # Data Center: Set 'true' to enable Bitbucket to find new Data Center cluster members via multicast. hazelcastNetworkTCPIP should not be specified when using this setting.
+  # hazelcastNetworkMulticast: false
+  # # Data Center: Set 'true' to enable Bitbucket to find new Data Center cluster members via TCPIP. This setting requires `bitbucket.hazelcastNetworkTCPIPMembers` to be specified. `bitbucket.hazelcastNetworkMulticast` should not be specified when using this setting.
+  # hazelcastNetworkTCPIP: false
+  # # Data Center: List of members that Hazelcast nodes should connect to when `bitbucket.hazelcastNetworkTCPIP` is 'true'
+  # hazelcastNetworkTCPIPMembers: {}
+  # # Data Center: Specifies the cluster group the instance should join.
+  # hazelcastGroupName:
+  # # Data Center: The password required to join the specified cluster group.
+  # hazelcastGroupPassword:
+
+# To run Bitbucket as part of a Data Center cluster, create a Docker network and assign the Bitbucket container a static IP.
+
+# TODO Add JMX Options
+# Bitbucket Server supports detailed JMX monitoring. To enable and configure JMX, use the environment variables below. For further information on JMX configuration, see Enabling JMX counters for performance monitoring
+# JMX_ENABLED (default: false)
+# Enable Bitbucket to publish JMX data
+# JMX_REMOTE_AUTH (default: NONE)
+# Set the authentication to use for remote JMX access. This value is required: anything other than "password" or "ssl" will cause remote JMX access to be disabled
+# JMX_REMOTE_PORT (default: 3333)
+# The port used to negotiate a JMX connection. Note: this port is only used during the initial authorization, after which a different RMI port used for data transfer
+# JMX_REMOTE_RMI_PORT (default: <random>)
+# The port used for all subsequent JMX-RMI data transfer. If desired, the RMI data port can be set to the same value as JMX_REMOTE_PORT to allow a single port to be used for both JMX authorization and data transfer
+# RMI_SERVER_HOSTNAME (default: NONE)
+# The hostname or IP address that clients will use to connect to the application for JMX monitoring. This must be resolvable by both clients and from the JVM host machine.
+# JMX_PASSWORD_FILE (default: NONE)
+# The full path to the JMX username/password file used to authenticate remote JMX clients. This is required when JMX_REMOTE_AUTH is set to "password"
+# $> docker run -e JMX_ENABLED=true -e JMX_REMOTE_AUTH=password -e JMX_REMOTE_RMI_PORT=3333 -e RMI_SERVER_HOSTNAME=bitbucket \
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  annotations:
+      kubernetes.io/ingress.class: nginx
+      certmanager.k8s.io/cluster-issuer: letsencrypt-prod
+      kubernetes.io/tls-acme: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: 500m
+  path: /
+  hosts:
+    - bitbucket.example.io
+  tls:
+    - secretName: bitbucket.example.io
+      hosts:
+        - bitbucket.example.io
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  # existingClaim: existing-pvc
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

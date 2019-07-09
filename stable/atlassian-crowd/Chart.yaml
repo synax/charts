@@ -1,0 +1,10 @@
+apiVersion: v1
+appVersion: 3.3.0
+description: "Identity management for web apps: Users can come from anywhere: Active Directory, LDAP, Crowd itself, or any mix thereof. Control permissions to all your applications in one place – Atlassian, Subversion, Google Apps, or your own apps."
+home: https://www.atlassian.com/
+keywords:
+- atlassian
+- crowd
+- identity-managmenet
+name: atlassian-crowd
+version: 0.7.0

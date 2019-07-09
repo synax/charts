@@ -1,0 +1,65 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: CROWD_PROXY_NAME
+            value: {{ .Values.crowd.proxyName | quote }}
+          - name: CROWD_PROXY_PORT
+            value: {{ .Values.crowd.proxyPort | quote }}
+          - name: CROWD_PROXY_SCHEME
+            value: {{ .Values.crowd.proxyScheme | quote }}
+          - name: CROWD_PROXY_SECURE
+            value: {{ .Values.crowd.proxySecure | quote }}
+          - name: CROWD_URL
+            value: {{ .Values.crowd.url | quote }}
+          - name: LOGIN_BASE_URL
+            value: {{ .Values.crowd.loginBaseUrl | quote }}
+          - name: SPLASH_CONTEXT
+            value: {{ .Values.crowd.splashContext | quote }}
+          - name: CROWD_CONTEXT
+            value: {{ .Values.crowd.crowdContext | quote }}
+          - name: CROWDID_CONTEXT
+            value: {{ .Values.crowd.crodIDContext | quote }}
+          - name: OPENID_CLIENT_CONTEXT
+            value: {{ .Values.crowd.openIDClientContext }}
+          - name: DEMO_CONTEXT
+            value: {{ .Values.crowd.demoContext | quote }}
+          ports:
+            - name: http
+              containerPort: 8095
+              protocol: TCP
+          # volumeMounts:
+          #  - name: crowd-data
+          #    mountPath: "/var/atlassian/crowd"
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      # volumes:
+      #   - name: crowd-data
+      #   {{- if .Values.persistence.enabled }}
+      #     persistentVolumeClaim:
+      #      claimName: {{ template "fullname" . }}
+      #   {{- else }}
+      #      emptyDir: {}
+      #   {{- end }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+    {{- end }}

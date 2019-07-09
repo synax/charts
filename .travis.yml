@@ -1,0 +1,46 @@
+sudo: required
+dist: xenial
+addons:
+  snaps:
+  - name: google-cloud-sdk
+    classic: true
+
+language: node_js
+node_js:
+- node
+services:
+- docker
+env:
+  global:
+    - BUCKET_URI=synax-io-helm.appspot.com/charts
+    - INDEX_URL=https://charts.synax.io/index.yaml
+    - PUBLIC_URI=public
+    - ARTIFACTS_URI=artifacts
+
+install:
+- "./scripts/install-helm.sh"
+
+script:
+- echo "Run shell scripts linting!"
+- "./test/lint-scripts.sh"
+
+# We build the new charts and update the repo before we deploy
+before_deploy:
+- "./scripts/setup-gcloud.sh"
+- "./scripts/build-charts.sh"
+# We do the deployment of the charts using a before_deploy script, this has to happen before firebase deployment
+- "./scripts/deploy-charts.sh"
+
+deploy:
+# Deploy all files in public to firebase
+- provider: firebase
+  skip_cleanup: true
+  project: synax-io-helm
+  token:
+    secure: TwIKKE7mE1P2Wp1MxSajQ+y1hUmXfxOqo7R1QlZFcZ8gHs0j4GTiJsqCWiiqa/rg0bAk+bMh+C7PASxW4r5v8eKZun/9CLYoJ0UZYtytj003fT5ltPQ+l6glvPyrW7y1Oh8eA3pcf3CIlFbMbSkGciUbFndA+vr6KA4ma4NLQNWrsmQ3ZrTHXOJITxP17BDUtfIUqhbZJe+jGD1wXk9br4uxK+VEVeD1ig8qBifwuWYXS3DiCCiYIjEJcK+Ya5rJdUYQ+48zPH84MXhenjHCsLNnr64T6acAZRsv1p5WFTGmFKcoZxHaHd6cwoqf3GEBe8h+HD3CYGegR/N6meYnfmEMhu/1+bkr795f4DFfpxafMXvVtyAyGW+WGO4dAzwkB1wa62VOzM+SZ3anAyDqp04H/Z/1toeklPX7lbIk74p/wjTCUGh5wqXqcj1sJlT4L3+ApGJKsm81Lp79Ek58GHUEqTBwECZuXE1EMSfWQ3oWJSisvpB/LxOYS++M6D81y6LfdKJPd3+Jv6yB+w5TAOildslqaFIKMJ42HuiJ3/vILrdi0i85yQ9Va7InxBsw67EDy83nc1fIht5seZl1zKK66lmI6aH5L0JtD4mCzPklz9+JMCwzr32uwEoLZxAm0QvZ+OGZdUvpoW5gAkv5wBZUOKX+6stQvYw47fMXxJQ=
+  on:
+    branch: master
+
+notifications:
+  email: false
+    

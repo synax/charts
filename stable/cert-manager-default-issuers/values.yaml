@@ -1,0 +1,7 @@
+# Default values for cert-manager-default-issuers.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+email: acme@example.io
+stagingACMEServer: https://acme-staging-v02.api.letsencrypt.org/directory
+prodACMEServer: https://acme-v02.api.letsencrypt.org/directory

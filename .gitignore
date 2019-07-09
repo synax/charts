@@ -1,0 +1,10 @@
+public/*
+artifacts/*
+.firebase/*
+
+
+# Exceptions
+!public/.gitkeep
+!public/404.html
+!public/index.html
+!artifacts/.gitkeep

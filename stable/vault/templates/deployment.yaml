@@ -1,0 +1,192 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "vault.fullname" . }}
+  labels:
+    app: {{ template "vault.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.labels }}
+{{ toYaml .Values.labels | indent 4 }}
+{{- end }}
+  annotations:
+{{ toYaml .Values.annotations | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: {{ template "vault.name" . }}
+        release: {{ .Release.Name }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+    spec:
+      containers:
+      - name: auto-unseal
+        image: "{{ .Values.unseal.image.repository }}:{{ .Values.unseal.image.tag }}"
+        imagePullPolicy: {{ .Values.unseal.image.pullPolicy }}
+        env:
+        - name: AWS_REGION
+          value: "{{ .Values.unseal.region }}"
+        - name: VAULT_ADDR
+          value: "{{ .Values.unseal.vault.scheme}}://{{ .Values.unseal.vault.address }}:{{ .Values.unseal.vault.port }}"
+        - name: VAULT_CACERT
+          value: /etc/tls/ca.pem
+        args:
+        - unseal
+        - --unseal-period=5s
+        - --mode=aws-kms-ssm
+        - --aws-kms-key-id={{ .Values.unseal.awsKmsKeyId }}
+        - --aws-ssm-key-prefix={{ .Values.unseal.awsSsmKeyPrefix }}
+        - --secret-shares={{ .Values.unseal.secretShares }}
+        - --secret-threshold={{ .Values.unseal.secretThreshold }}
+        volumeMounts:
+        {{- range .Values.vault.customSecrets }}
+        - name: {{ .secretName }}
+          mountPath: {{ .mountPath }}
+        {{- end }}
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.vault.dev }}
+        command: ["vault", "server", "-dev", "-dev-listen-address", "[::]:8200"]
+        {{- else }}
+        command: ["vault", "server", "-config", "/vault/config/config.json"]
+        {{- end }}
+        {{- if .Values.lifecycle }}
+        lifecycle:
+{{ tpl .Values.lifecycle . | indent 10 }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+          name: api
+        - containerPort: 8201
+          name: cluster-address
+        livenessProbe:
+          # Alive if it is listening for clustering traffic
+          tcpSocket:
+            port: {{ .Values.service.port }}
+        readinessProbe:
+          # Ready depends on preference
+          httpGet:
+            path: /v1/sys/health?
+              {{- if .Values.vault.readiness.readyIfSealed -}}sealedcode=204&{{- end }}
+              {{- if .Values.vault.readiness.readyIfStandby -}}standbycode=204&{{- end }}
+              {{- if .Values.vault.readiness.readyIfUninitialized -}}uninitcode=204&{{- end }}
+            port: {{ .Values.service.port }}
+            scheme: {{ if .Values.vault.config.listener.tcp.tls_disable -}}HTTP{{- else -}}HTTPS{{- end }}
+        securityContext:
+          readOnlyRootFilesystem: true
+          capabilities:
+            add:
+            - IPC_LOCK
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: VAULT_CLUSTER_ADDR
+            value: "https://$(POD_IP):{{ .Values.service.vaultClusterPort }}"
+          - name: VAULT_LOG_LEVEL
+            value: {{ .Values.vault.logLevel | quote }}
+          - name: VAULT_REDIRECT_ADDR
+            value: "https://vault.vault.svc.cluster.local:8200"
+        {{- if .Values.vault.extraEnv }}
+{{ toYaml .Values.vault.extraEnv | indent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: vault-config
+          mountPath: /vault/config/
+        - name: vault-root
+          mountPath: /root/
+        {{- range .Values.vault.customSecrets }}
+        - name: {{ .secretName | replace "." "-"}}
+          mountPath: {{ .mountPath }}
+        {{- end }}
+{{- if .Values.vault.extraContainers }}
+{{ toYaml .Values.vault.extraContainers | indent 6}}
+{{- end }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.affinity }}
+      {{- if .Values.consulAgent.join }}
+      - name: {{ .Chart.Name }}-consul-agent
+        image: "{{ .Values.consulAgent.repository }}:{{ .Values.consulAgent.tag }}"
+        imagePullPolicy: {{ .Values.consulAgent.pullPolicy }}
+        securityContext:
+          #readOnlyRootFilesystem: true
+        env:
+          - name: CONSUL_HTTP_SSL
+            value: "true"
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: GOSSIP_ENCRYPTION_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.consulAgent.gossipEncryptionKeySecret }}
+                key: gossip-encryption-key
+          - name: CONSUL_LOCAL_CONFIG
+            value: '{
+              "server": false,
+              "client_addr": "127.0.0.1",
+              "log_level": "INFO",
+              "ca_file": "/etc/tls/ca.pem",
+              "cert_file": "/etc/tls/consul.pem",
+              "key_file": "/etc/tls/consul-key.pem",
+              "verify_incoming": true,
+              "verify_outgoing": true,
+              "verify_server_hostname": true,
+              "ports": { "https": 8443 }
+            }'
+        args:
+        - "/bin/sh"
+        - "-ec"
+        - |
+          exec /bin/consul agent \
+            -advertise=$(POD_IP) \
+            -domain={{ .Values.consulAgent.domain }} \
+            -datacenter={{ .Values.consulAgent.datacenter }} \
+            -config-file=/consul/config/local.json \
+            -join={{- .Values.consulAgent.join }} \
+            -encrypt=${GOSSIP_ENCRYPTION_KEY} \
+            -data-dir=/consul/data
+        volumeMounts:
+        - name: consul-data
+          mountPath: /etc/consul
+        {{- range .Values.vault.customSecrets }}
+        - name: {{ .secretName | replace "." "-"}}
+          mountPath: {{ .mountPath }}
+        {{- end }}
+     {{- end }}
+      affinity:
+{{ tpl .Values.affinity . | indent 8 }}
+      {{- end }}
+      volumes:
+        - name: vault-config
+          configMap:
+            name: "{{ template "vault.fullname" . }}-config"
+        - name: vault-root
+          emptyDir: {}
+        {{- range .Values.vault.customSecrets }}
+        - name: {{ .secretName | replace "." "-"}}
+          secret:
+            secretName: {{ .secretName }}
+        {{- end }}
+{{- if .Values.vault.extraVolumes }}
+{{ toYaml .Values.vault.extraVolumes | indent 8}}
+{{- end }}
+        {{- if .Values.consulAgent.join }}
+        - name: consul-data
+          emptyDir: {}
+        {{- end }}
+      {{- if .Values.imagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecret }}
+      {{- end }}

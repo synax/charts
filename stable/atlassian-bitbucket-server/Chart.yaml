@@ -1,0 +1,14 @@
+apiVersion: v1
+version: 0.1.0
+appVersion: 5.16.0
+description: On-premises source code management for Git that's secure, fast, and enterprise grade.
+name: atlassian-bitbucket-server
+keywords:
+- atlassian
+- vcs
+- bitbucket
+- bitbucket-server
+home: https://www.atlassian.com/software/bitbucket
+sources:
+- https://bitbucket.org/atlassian/docker-atlassian-bitbucket-server
+- https://www.github.com/synax-io/charts

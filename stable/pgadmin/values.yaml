@@ -1,0 +1,42 @@
+replicaCount: 1
+
+image:
+  repository: dpage/pgadmin4
+  # if no tag is specified, the appVersion property will be used.
+  tag: 
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5050
+
+ingress:
+  enabled: true
+  annotations:
+      kubernetes.io/ingress.class: nginx
+      certmanager.k8s.io/cluster-issuer: letsencrypt-staging
+      kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - pgadmin.dev.cnative.io
+  tls:
+    - secretName: pgadmin.dev.cnative.io
+      hosts:
+        - pgadmin.dev.cnative.io
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  # existingClaim: existing-pvc
+
+pgadmin:
+  username: pgadmin4@pgadmin.org
+  #password: admin
+persistence:
+  enabled: true
+  #storageClass:
+  accessMode: ReadWriteOnce
+  size: 4Gi
+resources: {}
+

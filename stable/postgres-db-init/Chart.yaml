@@ -1,0 +1,12 @@
+apiVersion: v1
+
+description: Initializes databases in postgres
+home: https://www.postgres.org/
+keywords:
+- postgres
+- database
+- init
+- sql
+name: postgres-db-init
+version: 0.6.0
+appVersion: 0.1

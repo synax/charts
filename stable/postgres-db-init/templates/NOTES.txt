@@ -1,0 +1,1 @@
+1. Nothing to say about this. If it works, you have two databases for xray and artifactory
