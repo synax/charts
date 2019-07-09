@@ -84,11 +84,13 @@ data:
 {{- if .Values.workspaceDefaultRamLimit }}
   CHE_WORKSPACE_DEFAULT_MEMORY_LIMIT_MB: {{ .Values.workspaceDefaultRamLimit }}
 {{- end }}
-{{- if .Values.che.workspace.devfileRegistryUrl }}
-  CHE_WORKSPACE_DEVFILE__REGISTRY__URL: {{ .Values.che.workspace.devfileRegistryUrl }}
-{{- end }}
-{{- if .Values.che.workspace.pluginRegistryUrl }}
-  CHE_WORKSPACE_PLUGIN__REGISTRY__URL: {{ .Values.che.workspace.pluginRegistryUrl }}
+{{- if and .Values.che .Values.che.workspace }}
+  {{- if .Values.che.workspace.devfileRegistryUrl }}
+  CHE_WORKSPACE_DEVFILE__REGISTRY__URL: {{ .Values.che.workspace.devfileRegistryUrl | quote}}
+  {{- end }}
+  {{- if .Values.che.workspace.pluginRegistryUrl }}
+  CHE_WORKSPACE_PLUGIN__REGISTRY__URL: {{ .Values.che.workspace.pluginRegistryUrl | quote}}
+  {{- end }}
 {{- end }}
 {{- if .Values.workspaceSidecarDefaultRamLimit }}
   CHE_WORKSPACE_SIDECAR_DEFAULT__MEMORY__LIMIT__MB: {{ .Values.workspaceSidecarDefaultRamLimit }}
@@ -110,3 +112,6 @@ data:
   JAEGER_SAMPLER_PARAM: "1"
   JAEGER_REPORTER_MAX_QUEUE_SIZE: "10000"
   CHE_METRICS_ENABLED: {{ .Values.global.metricsEnabled | quote }}
+  CHE_WORKSPACE_JAVA__OPTIONS: "-Xmx2000m"
+  CHE_WORKSPACE_MAVEN__OPTIONS: "-Xmx20000m"
+  CHE_INFRA_KUBERNETES_WORKSPACE__START__TIMEOUT__MIN: "15"

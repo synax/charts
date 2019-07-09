@@ -16,7 +16,7 @@
 cheWorkspaceHttpProxy: ""
 cheWorkspaceHttpsProxy: ""
 cheWorkspaceNoProxy: ""
-cheImage: eclipse/che-server:7.0.0-RC-2.0
+cheImage: eclipse/che-server:nightly
 cheImagePullPolicy: Always
 cheKeycloakRealm: "che"
 cheKeycloakClientId: "che-public"
@@ -67,10 +67,10 @@ global:
     fsGroup: 1724
   postgresDebugLogs: false
 
-che:
- workspace:
-   devfileRegistryUrl: "https://che-devfile-registry.openshift.io/"
-   pluginRegistryUrl: "https://che-plugin-registry.openshift.io/v3"
+che: {}
+#  workspace:
+#    devfileRegistryUrl: "https://che-devfile-registry.openshift.io/"
+#    pluginRegistryUrl: "https://che-plugin-registry.openshift.io/v3"
 
 prometheus:
   alertmanager:
