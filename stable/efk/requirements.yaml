@@ -1,0 +1,23 @@
+dependencies:
+- name: elasticsearch
+  version: "7.2.1-0"
+  repository: https://helm.elastic.co
+- name: kibana
+  version: "7.2.1-0"
+  repository: https://helm.elastic.co
+- name: metricbeat
+  version: "7.2.1-0"
+  repository: https://helm.elastic.co
+  condition: metricbeat.enabled
+- name: filebeat
+  version: "7.2.1-0"
+  repository: https://helm.elastic.co
+  condition: filebeat.enabled
+- name: fluent-bit
+  version: "2.4.3"
+  repository: https://kubernetes-charts.storage.googleapis.com/
+- name: elasticsearch-curator
+  version: "1.5.0"
+  repository: https://kubernetes-charts.storage.googleapis.com/
+
+

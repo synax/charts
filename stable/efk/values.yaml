@@ -1,0 +1,40 @@
+# Default values for efk.
+
+kibana:
+  replicas: 1
+  elasticsearchURL: "" # "http://elasticsearch-master:9200"
+  elasticsearchHosts: "http://elasticsearch-master:9200"
+
+elasticsearch:
+  clusterName: "elasticsearch"
+  nodeGroup: "master"
+  minimumMasterNodes: 2
+  replicas: 3
+
+
+fluent-bit:
+  enabled: true
+  image:
+    fluent_bit:
+      repository: fluent/fluent-bit
+      tag: 1.2.1
+  backend:
+    type: es
+    es:
+      host: elasticsearch-master
+      port: 9200
+      index: kubernetes_cluster
+      logstash_prefix: kubernetes_cluster
+
+elasticsearch-curator:
+  config:
+    elasticsearch:
+      hosts:
+        - elasticsearch-master
+
+filebeat:
+  enabled: false
+
+metricbeat:
+  enabled: false
+ 
